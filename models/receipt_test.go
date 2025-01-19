@@ -15,7 +15,7 @@ func TestReceiptIsValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testTime, err := time.Parse("15:04", "13:01")
+	testTime, err := time.Parse(timeFormat, "13:01")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestReceiptCalculatePoints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testTime1, err := time.Parse("15:04", "13:01")
+	testTime1, err := time.Parse(timeFormat, "13:01")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestReceiptCalculatePoints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testTime2, err := time.Parse("15:04", "14:33")
+	testTime2, err := time.Parse(timeFormat, "14:33")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestReceiptUnmarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testTime1, err := time.Parse("15:04", "08:13")
+	testTime1, err := time.Parse(timeFormat, "08:13")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestReceiptUnmarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testTime2, err := time.Parse("15:04", "13:13")
+	testTime2, err := time.Parse(timeFormat, "13:13")
 	if err != nil {
 		t.Fatal(err)
 	}
