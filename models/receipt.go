@@ -53,32 +53,24 @@ func (r Receipt) IsValid() (err error) {
 }
 
 // CalculatePoints returns the number of points earned by the receipt.
-func (r Receipt) CalculatePoints() (points int, _ error) {
+func (r Receipt) CalculatePoints() (points int) {
 	// count the number of alphanumeric characters and add that to the number of points
 	points += len(alphanumericRegex.FindAllString(r.Retailer, -1))
-	// separate the whole dollars and cents in the total
-	totalPieces := strings.Split(r.Total, ".")
-	// parse the pieces of the total to get integers
-	totalDollars, err := strconv.Atoi(totalPieces[0])
-	if err != nil {
-		return 0, err
-	}
-
-	totalCents, err := strconv.Atoi(totalPieces[1])
-	if err != nil {
-		return 0, err
-	}
-
-	if totalCents == 0 {
+	// determine whether the total amount is a whole number
+	isWhole := math.Ceil(r.totalFloat) == r.totalFloat
+	if isWhole && r.totalFloat > 1 {
 		// add 50 pts if the total is a round dollar amount with no cents
 		points += 50
 	}
-	if totalCents%25 == 0 {
-		// add 25 pts if the total is a multiple of 0.25
-		points += 25
-	} else if totalDollars > 0 && totalCents == 0 {
-		// add 25 pts if the total is greater than a dollar and there are no cents.
-		// this is a corner case for multiples of 0.25
+
+	// get just the dollar amount
+	dollars := math.Floor(r.totalFloat)
+	// subtract the dollar amount from the total to get the cents.
+	cents := r.totalFloat - dollars
+	// multiple the cents by 100 to get whole numbers and cast to integer to avoid float math
+	adjustedCents := int(cents * 100)
+	if adjustedCents%25 == 0 && r.totalFloat > 1 {
+		// add 25 pts if the quantity of cents is a multiple of 0.25
 		points += 25
 	}
 
@@ -92,12 +84,8 @@ func (r Receipt) CalculatePoints() (points int, _ error) {
 		if len(trimmedDesc)%3 == 0 {
 			// when the trimmed length of the item description is a multiple of 3
 			// multiple the price by 0.2 and round up to the nearest integer
-			price, err := strconv.ParseFloat(item.Price, 64)
-			if err != nil {
-				return 0, err
-			}
+			price := item.priceFloat * 0.2
 
-			price = price * 0.2
 			// add .5 to price before rounding so that we will always round up, then add the points
 			pointsFromItem := int(math.Round(price + 0.5))
 			points += pointsFromItem
@@ -116,7 +104,7 @@ func (r Receipt) CalculatePoints() (points int, _ error) {
 		points += 10
 	}
 
-	return points, nil
+	return points
 }
 
 // Unmarshal handles generic unmarshalling for the receipt object.

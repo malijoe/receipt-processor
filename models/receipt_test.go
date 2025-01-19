@@ -101,13 +101,14 @@ func TestReceiptCalculatePoints(t *testing.T) {
 				PurchaseDate: testDate1,
 				PurchaseTime: testTime1,
 				Items: []Item{
-					{ShortDescription: "Mountain Dew 12PK", Price: "6.49"},
-					{ShortDescription: "Emils Cheese Pizza", Price: "12.25"},
-					{ShortDescription: "Knorr Creamy Chicken", Price: "1.26"},
-					{ShortDescription: "Doritos Nacho Cheese", Price: "3.35"},
-					{ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ", Price: "12.00"},
+					{ShortDescription: "Mountain Dew 12PK", Price: "6.49", priceFloat: 6.49},
+					{ShortDescription: "Emils Cheese Pizza", Price: "12.25", priceFloat: 12.25},
+					{ShortDescription: "Knorr Creamy Chicken", Price: "1.26", priceFloat: 1.26},
+					{ShortDescription: "Doritos Nacho Cheese", Price: "3.35", priceFloat: 3.35},
+					{ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ", Price: "12.00", priceFloat: 12.00},
 				},
-				Total: "35.35",
+				Total:      "35.35",
+				totalFloat: 35.35,
 			},
 			wantPoints: 28,
 		},
@@ -117,26 +118,49 @@ func TestReceiptCalculatePoints(t *testing.T) {
 				PurchaseDate: testDate2,
 				PurchaseTime: testTime2,
 				Items: []Item{
-					{ShortDescription: "Gatorade", Price: "2.25"},
-					{ShortDescription: "Gatorade", Price: "2.25"},
-					{ShortDescription: "Gatorade", Price: "2.25"},
-					{ShortDescription: "Gatorade", Price: "2.25"},
+					{ShortDescription: "Gatorade", Price: "2.25", priceFloat: 2.25},
+					{ShortDescription: "Gatorade", Price: "2.25", priceFloat: 2.25},
+					{ShortDescription: "Gatorade", Price: "2.25", priceFloat: 2.25},
+					{ShortDescription: "Gatorade", Price: "2.25", priceFloat: 2.25},
 				},
-				Total: "9.00",
+				Total:      "9.00",
+				totalFloat: 9.00,
 			},
 			wantPoints: 109,
+		},
+		{
+			receipt: Receipt{
+				Retailer:     "test-retailer",
+				PurchaseDate: testDate1,
+				PurchaseTime: testTime2,
+				Items: []Item{
+					{ShortDescription: "Something cheap", Price: "0.70", priceFloat: 0.70},
+				},
+				Total:      "0.70",
+				totalFloat: 0.70,
+			},
+			wantPoints: 12 + 6 + 10 + 1,
+		},
+		{
+			receipt: Receipt{
+				Retailer:     "test-retailer",
+				PurchaseDate: testDate1,
+				PurchaseTime: testTime2,
+				Items: []Item{
+					{ShortDescription: "Something free", Price: "0.00", priceFloat: 0.00},
+				},
+				Total:      "0.00",
+				totalFloat: 0.00,
+			},
+			wantPoints: 12 + 6 + 10,
 		},
 	}
 
 	for _, tc := range testcases {
-		points, err := tc.receipt.CalculatePoints()
-		if err != nil {
-			t.Errorf("%v.CalculatePoints() returned an unexpected error: %v", tc.receipt, err)
-			continue
-		}
+		points := tc.receipt.CalculatePoints()
 
 		if points != tc.wantPoints {
-			t.Errorf("%v.CalculatePoints(); got: %d, want: %d", tc.receipt, points, tc.wantPoints)
+			t.Errorf("%+v.CalculatePoints(); got: %d, want: %d", tc.receipt, points, tc.wantPoints)
 		}
 	}
 }
