@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestReceiptIsValid(t *testing.T) {
 				Retailer:     "23456715215!",
 				PurchaseDate: testDate,
 				PurchaseTime: testTime,
-				Items:        []Item{{ShortDescription: "test-item"}},
+				Items:        []Item{{ShortDescription: "test-item", Price: "1.00"}},
 				Total:        "00000",
 			},
 			wantErrs: []error{ErrReceiptInvalid, ErrReceiptRetailerInvalid, ErrPriceFormatInvalid},
@@ -49,7 +50,7 @@ func TestReceiptIsValid(t *testing.T) {
 				Retailer:     `w-s&`,
 				PurchaseDate: testDate,
 				PurchaseTime: testTime,
-				Items:        []Item{{ShortDescription: "test-item"}},
+				Items:        []Item{{ShortDescription: "test-item", Price: "1.00"}},
 				Total:        "42.00",
 			},
 		},
@@ -69,6 +70,19 @@ func TestReceiptIsValid(t *testing.T) {
 		}
 		if len(tc.wantErrs) > 0 {
 			t.Errorf("%v.IsValid(); expected error(s) %v, but none were thrown", tc.receipt, tc.wantErrs)
+			continue
+		}
+
+		// make sure total was parsed correctly
+		if tc.receipt.totalFloat == 0 {
+			t.Errorf("%v.IsValid() total was not parsed", tc.receipt)
+		} else {
+			parsed, err := strconv.ParseFloat(tc.receipt.Total, 64)
+			if err != nil {
+				t.Error(err)
+			} else if tc.receipt.totalFloat != parsed {
+				t.Errorf("%v.IsValid() - total was not parsed correctly; got: %v, want: %v", tc.receipt, tc.receipt.totalFloat, parsed)
+			}
 		}
 	}
 }
@@ -205,10 +219,9 @@ func TestReceiptUnmarshalJSON(t *testing.T) {
 				PurchaseDate: testDate1,
 				PurchaseTime: testTime1,
 				Total:        "2.65",
-				totalFloat:   2.65,
 				Items: []Item{
-					{ShortDescription: "Pepsi - 12-oz", Price: "1.25", priceFloat: 1.25},
-					{ShortDescription: "Dasani", Price: "1.40", priceFloat: 1.40},
+					{ShortDescription: "Pepsi - 12-oz", Price: "1.25"},
+					{ShortDescription: "Dasani", Price: "1.40"},
 				},
 			},
 			wantErr: nil,
@@ -228,16 +241,16 @@ func TestReceiptUnmarshalJSON(t *testing.T) {
 				PurchaseDate: testDate2,
 				PurchaseTime: testTime2,
 				Total:        "1.25",
-				totalFloat:   1.25,
 				Items: []Item{
-					{ShortDescription: "Pepsi - 12-oz", Price: "1.25", priceFloat: 1.25},
+					{ShortDescription: "Pepsi - 12-oz", Price: "1.25"},
 				},
 			},
 			wantErr: nil,
 		},
 		{
 			input:   `{"retailer": "", "purchaseDate": "", "purchaseTime":"","total":"","items":[]}`,
-			wantErr: ErrReceiptInvalid,
+			want:    Receipt{Items: []Item{}},
+			wantErr: nil,
 		},
 	}
 

@@ -14,7 +14,7 @@ type Item struct {
 }
 
 // IsValid returns an error if the Item object is not valid.
-func (item Item) IsValid() (err error) {
+func (item *Item) IsValid() (err error) {
 	if item.ShortDescription == "" {
 		err = errors.Join(err, ErrItemShortDescriptionBlank)
 	} else if !shortDescriptionRegex.MatchString(item.ShortDescription) {
@@ -25,6 +25,13 @@ func (item Item) IsValid() (err error) {
 		err = errors.Join(err, ErrItemPriceBlank)
 	} else if !priceRegex.MatchString(item.Price) {
 		err = errors.Join(err, fmt.Errorf("%s is an %w", item.Price, ErrPriceFormatInvalid))
+	} else {
+		// if a price is provided, parse the float. otherwise let the validation method catch the error.
+		priceFloat, err := strconv.ParseFloat(item.Price, 64)
+		if err != nil {
+			return err
+		}
+		item.priceFloat = priceFloat
 	}
 
 	if err != nil {
@@ -46,17 +53,7 @@ func (item *Item) Unmarshal(unmarshal func(any) error) error {
 
 	item.ShortDescription = obj.ShortDescription
 	item.Price = obj.Price
-	if obj.Price != "" {
-		// if a price is provided, parse the float. otherwise let the validation method catch the error.
-		priceFloat, err := strconv.ParseFloat(obj.Price, 64)
-		if err != nil {
-			return err
-		}
-		item.priceFloat = priceFloat
-	}
-	if err := item.IsValid(); err != nil {
-		return err
-	}
+
 	return nil
 }
 

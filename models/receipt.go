@@ -21,7 +21,7 @@ type Receipt struct {
 	totalFloat   float64
 }
 
-func (r Receipt) IsValid() (err error) {
+func (r *Receipt) IsValid() (err error) {
 	if r.Retailer == "" {
 		err = errors.Join(err, ErrReceiptRetailerBlank)
 	} else if !retailerRegex.MatchString(r.Retailer) {
@@ -40,10 +40,23 @@ func (r Receipt) IsValid() (err error) {
 		err = errors.Join(err, ErrReceiptItemsEmpty)
 	}
 
+	for _, item := range r.Items {
+		if iErr := item.IsValid(); iErr != nil {
+			err = errors.Join(err, iErr)
+		}
+	}
+
 	if r.Total == "" {
 		err = errors.Join(err, ErrReceiptTotalBlank)
 	} else if !priceRegex.MatchString(r.Total) {
 		err = errors.Join(err, fmt.Errorf("%s is an %w", r.Total, ErrPriceFormatInvalid))
+	} else {
+		totalFloat, pErr := strconv.ParseFloat(r.Total, 64)
+		if pErr != nil {
+			err = errors.Join(err, pErr)
+		} else {
+			r.totalFloat = totalFloat
+		}
 	}
 
 	if err != nil {
@@ -142,18 +155,7 @@ func (r *Receipt) Unmarshal(unmarshal func(any) error) error {
 	r.Retailer = obj.Retailer
 	r.Total = obj.Total
 	r.Items = obj.Items
-	if obj.Total != "" {
-		// if a total is provided, parse the float. otherwise, let the validation method catch the error.
-		totalFloat, err := strconv.ParseFloat(obj.Total, 64)
-		if err != nil {
-			return err
-		}
-		r.totalFloat = totalFloat
-	}
 
-	if err := r.IsValid(); err != nil {
-		return err
-	}
 	return nil
 }
 

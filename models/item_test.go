@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +41,20 @@ func TestItemIsValid(t *testing.T) {
 		}
 		if len(tc.wantErrs) > 0 {
 			t.Errorf("%v.IsValid(); expected error(s) %v, but none were thrown", tc.item, tc.wantErrs)
+			continue
 		}
+		// make sure the price is parsed correctly
+		if tc.item.priceFloat == 0 {
+			t.Errorf("%v.IsValid(); price was not parsed", tc.item)
+		} else {
+			parsed, err := strconv.ParseFloat(tc.item.Price, 64)
+			if err != nil {
+				t.Error(err)
+			} else if parsed != tc.item.priceFloat {
+				t.Errorf("%v.IsValid() - parsed price had unexpected value; got: %v, want: %v", tc.item, tc.item.priceFloat, parsed)
+			}
+		}
+
 	}
 }
 
@@ -52,22 +66,22 @@ func TestItemUnmarshalJSON(t *testing.T) {
 	}{
 		{
 			input:   `{"shortDescription": "Pepsi - 12-oz", "price": "1.25"}`,
-			want:    Item{ShortDescription: "Pepsi - 12-oz", Price: "1.25", priceFloat: 1.25},
+			want:    Item{ShortDescription: "Pepsi - 12-oz", Price: "1.25"},
 			wantErr: nil,
 		},
 		{
 			input:   `{"shortDescription": "Dasani", "price": "1.40"}`,
-			want:    Item{ShortDescription: "Dasani", Price: "1.40", priceFloat: 1.40},
+			want:    Item{ShortDescription: "Dasani", Price: "1.40"},
 			wantErr: nil,
 		},
 		{
 			input:   `{"shortDescription": "   Klarbrunn 12-PK 12 FL OZ  ", "price": "12.00"}`,
-			want:    Item{ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ", Price: "12.00", priceFloat: 12.00},
+			want:    Item{ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ", Price: "12.00"},
 			wantErr: nil,
 		},
 		{
 			input:   `{"shortDescription": "", "price": ""}`,
-			wantErr: ErrItemInvalid,
+			wantErr: nil,
 		},
 	}
 
