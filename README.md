@@ -1,3 +1,8 @@
+# Summary
+This repository contains a submission for Fetch Rewards Take-Home exercise on behalf of Malique Joseph.
+
+The following is the parameters by which the exercise was completed:
+
 # Receipt Processor
 
 Build a webservice that fulfils the documented API. The API is described below. A formal definition is provided 
