@@ -1,8 +1,11 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestItemIsValid(t *testing.T) {
@@ -38,5 +41,50 @@ func TestItemIsValid(t *testing.T) {
 		if len(tc.wantErrs) > 0 {
 			t.Errorf("%v.IsValid(); expected error(s) %v, but none were thrown", tc.item, tc.wantErrs)
 		}
+	}
+}
+
+func TestItemUnmarshalJSON(t *testing.T) {
+	testcases := []struct {
+		input   string
+		want    Item
+		wantErr error
+	}{
+		{
+			input:   `{"shortDescription": "Pepsi - 12-oz", "price": "1.25"}`,
+			want:    Item{ShortDescription: "Pepsi - 12-oz", Price: "1.25", priceFloat: 1.25},
+			wantErr: nil,
+		},
+		{
+			input:   `{"shortDescription": "Dasani", "price": "1.40"}`,
+			want:    Item{ShortDescription: "Dasani", Price: "1.40", priceFloat: 1.40},
+			wantErr: nil,
+		},
+		{
+			input:   `{"shortDescription": "   Klarbrunn 12-PK 12 FL OZ  ", "price": "12.00"}`,
+			want:    Item{ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ", Price: "12.00", priceFloat: 12.00},
+			wantErr: nil,
+		},
+		{
+			input:   `{"shortDescription": "", "price": ""}`,
+			wantErr: ErrItemInvalid,
+		},
+	}
+
+	for _, tc := range testcases {
+		var testItem Item
+		if err := json.Unmarshal([]byte(tc.input), &testItem); err != nil {
+			if !errors.Is(err, tc.wantErr) {
+				t.Errorf("Unmarshal(%s) returned an unexpected error: %v", tc.input, err)
+			}
+			continue
+		}
+
+		if tc.wantErr != nil {
+			t.Errorf("Unmarshal(%s) expected error: %v", tc.input, tc.wantErr)
+			continue
+		}
+
+		assert.Equal(t, tc.want, testItem)
 	}
 }

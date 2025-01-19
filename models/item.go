@@ -1,8 +1,10 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 type Item struct {
@@ -29,4 +31,38 @@ func (item Item) IsValid() (err error) {
 		err = fmt.Errorf("%w: %w", ErrItemInvalid, err)
 	}
 	return err
+}
+
+// Unmarshal handles generic unmarshalling for item object
+func (item *Item) Unmarshal(unmarshal func(any) error) error {
+	var obj struct {
+		ShortDescription string `json:"shortDescription"`
+		Price            string `json:"price"`
+	}
+
+	if err := unmarshal(&obj); err != nil {
+		return err
+	}
+
+	item.ShortDescription = obj.ShortDescription
+	item.Price = obj.Price
+	if obj.Price != "" {
+		// if a price is provided, parse the float. otherwise let the validation method catch the error.
+		priceFloat, err := strconv.ParseFloat(obj.Price, 64)
+		if err != nil {
+			return err
+		}
+		item.priceFloat = priceFloat
+	}
+	if err := item.IsValid(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON handles unmarshalling JSON data into an Item object.
+func (item *Item) UnmarshalJSON(data []byte) error {
+	return item.Unmarshal(func(obj any) error {
+		return json.Unmarshal(data, obj)
+	})
 }
