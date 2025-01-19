@@ -43,7 +43,7 @@ func TestReceiptIsValid(t *testing.T) {
 		},
 		{
 			receipt: Receipt{
-				Retailer:     `w-s\`,
+				Retailer:     `w-s&`,
 				PurchaseDate: testDate,
 				PurchaseTime: testTime,
 				Items:        []Item{{ShortDescription: "test-item"}},
