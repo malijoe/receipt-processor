@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -9,12 +10,15 @@ import (
 	"time"
 )
 
+const timeFormat = "15:04"
+
 type Receipt struct {
 	Retailer     string
 	PurchaseDate time.Time
 	PurchaseTime time.Time
 	Items        []Item
 	Total        string
+	totalFloat   float64
 }
 
 func (r Receipt) IsValid() (err error) {
@@ -113,4 +117,61 @@ func (r Receipt) CalculatePoints() (points int, _ error) {
 	}
 
 	return points, nil
+}
+
+// Unmarshal handles generic unmarshalling for the receipt object.
+func (r *Receipt) Unmarshal(unmarshal func(any) error) error {
+	var obj struct {
+		Retailer     string `json:"retailer"`
+		PurchaseDate string `json:"purchaseDate"`
+		PurchaseTime string `json:"purchaseTime"`
+		Total        string `json:"total"`
+		Items        []Item `json:"items"`
+	}
+
+	if err := unmarshal(&obj); err != nil {
+		return err
+	}
+
+	if obj.PurchaseDate != "" {
+		// if a purchase date is provided, parse it. otherwise, let the validation method catch the error.
+		purchaseDate, err := time.Parse(time.DateOnly, obj.PurchaseDate)
+		if err != nil {
+			return err
+		}
+		r.PurchaseDate = purchaseDate
+	}
+
+	if obj.PurchaseTime != "" {
+		// if a purchase time is provided, parse it. otherwise, let the validation method catch the error.
+		purchaseTime, err := time.Parse(timeFormat, obj.PurchaseTime)
+		if err != nil {
+			return err
+		}
+		r.PurchaseTime = purchaseTime
+	}
+
+	r.Retailer = obj.Retailer
+	r.Total = obj.Total
+	r.Items = obj.Items
+	if obj.Total != "" {
+		// if a total is provided, parse the float. otherwise, let the validation method catch the error.
+		totalFloat, err := strconv.ParseFloat(obj.Total, 64)
+		if err != nil {
+			return err
+		}
+		r.totalFloat = totalFloat
+	}
+
+	if err := r.IsValid(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON handles unmarshalling JSON data into a Receipt object.
+func (r *Receipt) UnmarshalJSON(data []byte) error {
+	return r.Unmarshal(func(obj any) error {
+		return json.Unmarshal(data, obj)
+	})
 }
